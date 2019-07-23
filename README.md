@@ -2,54 +2,45 @@
 Example commands for geospatial tasks with OGR, GDAL, PostGIS, ...
 
 
-Get info  ":
-`ogrinfo -so -al input.shp `
-"
-Convert formats ":
-`  `
-"
-Reproject (while defining unknown source spatial ref system?) ":
-`ogr2ogr -t_srs "http://spatialreference.org/ref/sr-org/6/ogcwkt/" -s_srs "EPSG:3310" out.shp in.shp -s_srs "https://spatialreference.org/ref/sr-org/epsg3857-wgs84-web-mercator-auxiliary-sphere/ogcwkt/" `
-"
-Clip by bounding box  ":
-`ogr2ogr out.shp in.shp -clipsrc <x_min> <y_min> <x_max> <y_max> `
-"
-Clip by vector  ":
-`ogr2ogr out.shp in.shp -clipsrc clipping_shp.shp (must be same srs; dissolve clipsrc first if desired)  `
-"
-Union/dissolve/merge-by-attribute ":
+Get info:
+`ogrinfo -so -al input.geojson`
+
+Convert formats:
+`ogr2ogr out.geojson in.shp`
+
+Reproject (while defining unknown source spatial ref system?):
+`ogr2ogr out_3857.geojson in_4236.geojson -s_srs 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]'
+ -t_srs 'PROJCS["WGS 84 / Pseudo-Mercator",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Mercator_1SP"],PARAMETER["central_meridian",0],PARAMETER["scale_factor",1],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["X",EAST],AXIS["Y",NORTH],EXTENSION["PROJ4","+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs"],AUTHORITY["EPSG","3857"]]'
+`
+
+Clip by bounding box:
+`ogr2ogr out.geojson in.geojson -clipsrc <x_min> <y_min> <x_max> <y_max>`
+
+Clip by vector:
+`ogr2ogr out.geojson in.geojson -clipsrc clipping_shp.geojson (must be same srs; dissolve clipsrc first if desired)  `
+
+Union/dissolve/merge-by-attribute:
 `ogr2ogr union.shp in.shp -dialect sqlite -sql "SELECT ST_Union(GEOMETRY),union_field FROM in_lyr GROUP BY union_field" in_lyr.shp `
-"
-Merge files ":
+
+Merge files:
 `ogr2ogr merged.shp in1.shp; ogr2ogr -update -append merged.shp in2.shp -nln merged  `
-"
-  ":
-`  `
-"
-Specify source driver?  ":
-`ogr2ogr out.shp GeoJSON:in.js ? `
-"
-  ":
-`  `
-"
-Add field ":
+
+Add field:
 `ogrinfo -sql "ALTER TABLE lyr ADD COLUMN field NUMERIC(1000,2)" lyr.shp `
-"
-Drop/remove/delete field  ":
+
+Drop/remove/delete field:
 `ogrinfo -sql "ALTER TABLE lyr DROP COLUMN field" lyr.shp  `
-"
-rename field  ":
-`ogrinfo -sql "alter table Acquisitions_working_SD_dissolve rename column SUM(FEE) TO FEE" Acquisitions_working_SD_dissolve.shp  `
-"
-Reorder fields  ":
+
+Rename field:
+`ogrinfo -sql "alter table input rename column SUM(hectares) TO hectares" input.shp  `
+
+Reorder fields:
 `ogr2ogr new.shp old.shp -select "second_fld, first_fld" `
-"
-Replace string  ":
+
+Replace string:
 `UPDATE table SET field = replace( field, 'C:\afolder\', 'C:\anewfolder\' )  `
-"
-  ":
-`  `
-"
+
+
 Convert field type (cast) ":
 `  `
 "
