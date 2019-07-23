@@ -35,6 +35,10 @@ Reorder fields:
 
 `ogr2ogr new.shp old.shp -select "second_fld, first_fld" `
 
+Optimize field widths ":
+
+`ogrinfo input.shp -sql "RESIZE input"`
+
 Replace string:
 
 `ogrinfo in.geojson -sql "UPDATE TABLE SET field = REPLACE( field, 'bad', 'good')"`
@@ -102,25 +106,8 @@ Create index (non-spatial):
 
 Concatenate:
 
-`ogrinfo input.shp -dialect sqlite -sql "SELECT AGNCY_ID || ':' || UNIT_NAME AS SUPER_UNIT FROM CPAD_Units_nightly LIMIT 10" `
+`ogrinfo input.shp -dialect sqlite -sql "SELECT field_a || ':' || field_b AS info FROM input LIMIT 10" `
 
-postgis:
-`ogrinfo -so -al PG:"host=localhost user=mapcollab_coastal_conservancy dbname=mapcollab_coastal_conservancy" `
-
-postgis: pg2shp ":
-`ogr2ogr ca3310_test.shp PG:"host=localhost user=mapcollab_coastal_conservancy dbname=mapcollab_coastal_conservancy" srid_test  -sql "select polygon_test as geometry, srid from srid_test where polygon_test is not null and ST_IsValid(polygon_test)"  `
-
-postgis: destroy db (make new):
-`ogr2ogr -overwrite -f "PostgreSQL" PG:"host=myhost user=myuser dbname=mydb password=mypass" city.shp  `
-
-postgis: shp2pg (ALWAYS use -update -append; these refer to the db as a whole, not tables individually) ":
-`ogr2ogr -f PostgreSQL -update -append PG:"dbname=my_db user=me password=pw" [-nln table_name] shp_name.shp  `
-
-postgis: shp2pg (if db:user is in conf file and you want tablename=shpname) ":
-`ogr2ogr -f PostgreSQL -update -append PG:"user=me" shp_name.shp `
-
-postgis: csv2pg ??:
-`ogr2ogr -f PostgreSQL -update -append PG:"dbname=my_db user=me password=pw" [-nln table_name] csv_name.csv  `
 
 Join:
 `  `
@@ -129,25 +116,24 @@ Explode ":
 `  `
 
 Buffer:
-`ogrinfo -dialect sqlite -sql "INSERT INTO one_cpad (AGNCY_NAME,GEOMETRY) SELECT 'buff',ST_Buffer(GEOMETRY,1000) FROM one_cpad WHERE AGNCY_NAME='foo' " one_cpad.shp `
+`ogrinfo input.shp -dialect sqlite -sql "INSERT INTO input (field1, geometry) SELECT 'buff', ST_Buffer(GEOMETRY,1000) FROM input WHERE field1='foo' " `
 
 Simplify (point-remove) ":
 `ogr2ogr -simplify 10 …  `
 
 Simplify/Generalize ":
-`alter table scc_dissolve add column the_geom_simp geometry; update scc_dissolve set the_geom_simp = ST_SimplifyPreserveTopology(the_geom,5);  `
+`alter table input add column the_geom_simp geometry; 
+update input set the_geom_simp = ST_SimplifyPreserveTopology(the_geom,5);  `
 
 Count vertices:
-`select st_npoints(the_geom) as npoints from scc_dissolve order by npoints; select sum(st_npoints(the_geom)) from scc_dissolve;  `
+`select st_npoints(the_geom) as npoints from input order by npoints; select sum(st_npoints(the_geom)) from input;  `
 
 Centroid (within) ":
 `ogr2ogr -f GeoJSON -t_srs epsg:4326 -lco COORDINATE_PRECISION=5 output.geojson input.shp -dialect sqlite -sql "SELECT ST_PointOnSurface(GEOMETRY) AS GEOMETRY,other_fields FROM input" `
 
 "spatial join" point-in-poly two shapefiles (one/same folder/directory) ":
-`ptime ogrinfo -dialect sqlite -sql "UPDATE scc_acquisitions_4326_b SET county2 = (SELECT NAME FROM 'counties_4326.shp'.counties_4326 WHERE ST_Intersects(geometry, ST_PointOnSurface(scc_acquisitions_4326_b.geometry)))" scc_acquisitions_4326_b.shp `
+`ogrinfo input.shp -dialect sqlite -sql "UPDATE input SET county2 = (SELECT NAME FROM 'counties_4326.shp'.counties_4326 WHERE ST_Intersects(geometry, ST_PointOnSurface(input.geometry)))"`
 
-Optimize field widths ":
-`ogrinfo -sql "RESIZE input" input.shp `
 
 Merge ":
 `  `
@@ -162,10 +148,10 @@ Create/build spatial index:
 `ogrinfo -sql "CREATE SPATIAL INDEX ON input" input.shp  `
 
 Summarize table attribue/field:
-`ogrinfo -dialect sqlite -sql "SELECT dataagg, COUNT(*) AS cnt FROM CCED_2014 GROUP BY dataagg ORDER BY cnt DESC" CCED_2014.shp  `
+`ogrinfo input.shp -dialect sqlite -sql "SELECT dataagg, COUNT(*) AS cnt FROM input GROUP BY dataagg ORDER BY cnt DESC" `
 
 Summarize to file ":
-`ogr2ogr -f csv sum_dataagg.csv -dialect sqlite -sql "SELECT dataagg, COUNT(*) AS cnt FROM CCED_2014 GROUP BY dataagg ORDER BY cnt DESC" CCED_2014.shp `
+`ogr2ogr input.shp -f csv sum_dataagg.csv -dialect sqlite -sql "SELECT dataagg, COUNT(*) AS cnt FROM input GROUP BY dataagg ORDER BY cnt DESC" `
 
 Explode (multipart to singlepart) ":
 `ST_Dump `
@@ -184,12 +170,6 @@ bbox min max:
 `ogrinfo -dialect sqlite -sql "SELECT MbrMinX(ST_Union(GEOMETRY)), MbrMinY(ST_Union(GEOMETRY)), MbrMaxX(ST_Union(GEOMETRY)), MbrMaxY(ST_Union(GEOMETRY)) FROM cb_2014_us_county_500k WHERE STATEFP = '06' GROUP BY STATEFP" cb_2014_us_county_500k.shp`
 
 
-spatial join / poly-in-poly / point in polygon:
-`ogrinfo -dialect sqlite -sql "UPDATE cced SET county2 = (SELECT name_pcase FROM counties WHERE ST_Intersects(geometry, cced.geometry))" temp2.sqlite`
-
-
-`ogrinfo -dialect sqlite -sql "UPDATE Acquisitions_working_SD SET COUNTY_NAM = ( SELECT NAME FROM 'N:\California\Administrative\Counties\TIGER-Census\tl_2013_ca_county_3310.shp'.tl_2013_ca_county_3310 as two WHERE ST_Intersects(geometry, ST_PointOnSurface(Acquisitions_working_SD.geometry)) )"  Acquisitions_working_SD.shp`
-
 sql data types:
 `INTEGER`
 `REAL`
@@ -197,7 +177,6 @@ sql data types:
 
 serial:
 `autoincrementing integer  `
-
 
 :
 `gdalwarp -of GTiff -cutline DATA/area_of_interest.shp -cl area_of_interest -crop_to_cutline DATA/PCE_in_gw.asc data_masked7.tiff  `
@@ -208,31 +187,7 @@ serial:
 convert vector to raster:
 `gdal_rasterize 10min_graticule_sierra_studyarea_CalTealeAlbers.shp teale.tif -tr 1000 1000 -te -211405 -279184 224593 388744 -a FIDTXT  `
 
-:
-`  `
 
-:
-`  `
-
-select addgeometrycolumn('collab_points', 'the_geom_simp', 3857, 'MULTIPOINT', 2);:
-`  `
-
-select addgeometrycolumn('collab_lines', 'the_geom_simp', 3857, 'MULTILINESTRING', 2);:
-`  `
-
-select addgeometrycolumn('collab_polygons', 'the_geom_simp', 3857, 'MULTIPOLYGON', 2);:
-`  `
-
-:
-`  `
-
-"create table surveys_updates (
-  id serial primary key,
-  user_id int references users(id) on delete cascade,
-  survey_id int references surveys(id) on delete cascade,
-  dt_update timestamp with time zone default now()
- );":
-`  `
 
 alter table surveys add column user_group_id int references user_groups(id) on delete cascade;:
 
@@ -240,25 +195,12 @@ alter table surveys add column user_group_id int references user_groups(id) on d
 `  `
 
 select duplicate ids: ":
-`ogrinfo -dialect sqlite -sql "SELECT SUPER_UNIT, COUNT(*) AS cnt FROM CPAD_2014a_SuperUnits GROUP BY SUPER_UNIT HAVING cnt>1" CPAD_2014a_SuperUnits.shp `
+`ogrinfo  input.shp -dialect sqlite -sql "SELECT name, COUNT(*) AS cnt FROM input GROUP BY name HAVING cnt>1"`
 
 find unit holdings problems ":
-`ogrinfo -dialect sqlite -sql "select project_na, count(project_na) as cnt from ( SELECT project_nu, project_na FROM Acquisitions_working_SD GROUP BY project_nu, project_na ) group by project_nu order by cnt" Acquisitions_working_SD.shp `
+`ogrinfo -dialect sqlite -sql "select project_na, count(project_na) as cnt from ( SELECT project_nu, project_na FROM input GROUP BY project_nu, project_na ) group by project_nu order by cnt" input.shp `
 
-:
-`  `
 
-:
-`ogrinfo -dialect sqlite -sql "SELECT UNIT_ID, COUNT(DISTINCT UNIT_NAME) AS cnt FROM CPAD_2014a_Holdings GROUP BY UNIT_ID,AGNCY_NAME,ACCESS_TYP,MNG_AGNCY,COUNTY HAVING cnt>1 ORDER BY cnt" CPAD_2014a_Holdings.shp  `
-
-:
-`ogrinfo -dialect sqlite -sql "SELECT UNIT_ID, COUNT(DISTINCT UNIT_NAME) AS cnt FROM CPAD_2014a_Holdings GROUP BY UNIT_ID HAVING cnt>1 ORDER BY cnt" CPAD_2014a_Holdings.shp `
-
-:
-`  `
-
-:
-`  `
 
 only in PostGIS 2.1? ST_Simplify:
 `http://strk.keybit.net/blog/2013/03/08/on-the-fly-simplification-of-topologically-defined-geometries/ `
@@ -303,7 +245,6 @@ http://lists.osgeo.org/pipermail/gdal-dev/2012-September/034006.html:
 `  `
 
 join to external dbf:
-`%ogr_version% %nightlyDir%\CPAD_Holdings_nightly_bot_join_agency.shp %nightlyDir%\CPAD_Holdings_nightly_INTERNAL_NoOverlaps.shp -sql "SELECT %non_agency_fields%, %agency_fields_aliased% FROM CPAD_Holdings_nightly_INTERNAL_NoOverlaps LEFT JOIN 'agency_list.dbf'.agency_list ON CPAD_Holdings_nightly_INTERNAL_NoOverlaps.AGNCY_ID = agency_list.AGNCY_ID WHERE (CFF <> 1 or CFF is null) and AGNCY_ID > 0 and AGNCY_ID < 9999 and AGNCY_NAME <> 'Trust for Public Land'" -overwrite  `
 
 :
 `ogrinfo -dialect sqlite -sql "SELECT a.field as afield, b.field as bfield FROM 'table_one.csv'.table_one as a LEFT JOIN table_two as b ON a.field = b.field" table_two.csv    `
@@ -313,7 +254,7 @@ join to external dbf:
 " `
 
 FULL OUTER JOIN!:
-`ogr2ogr -f csv nced_cced_schema_full_outer_join.csv -dialect sqlite -sql "SELECT c.field as cfield, n.field as nfield FROM 'tcc.csv'.tcc as c LEFT JOIN tnc as n ON c.field = n.field UNION ALL SELECT c.field as cfield, n.field as nfield FROM tnc as n LEFT JOIN 'tcc.csv'.tcc as c ON cfield=nfield WHERE cfield IS NULL" tnc.csv `
+`ogr2ogr -f csv schema_full_outer_join.csv -dialect sqlite -sql "SELECT c.field as cfield, n.field as nfield FROM 'tcc.csv'.tcc as c LEFT JOIN tnc as n ON c.field = n.field UNION ALL SELECT c.field as cfield, n.field as nfield FROM tnc as n LEFT JOIN 'tcc.csv'.tcc as c ON cfield=nfield WHERE cfield IS NULL" tnc.csv `
 
 :
 `  `
@@ -333,106 +274,10 @@ including overlapping buffers (state parks factfinder):
 http://books.google.com/books?id=zCaxAgAAQBAJ&pg=PT182&lpg=PT182&dq=postgis+Using+polygon+overlays+for+proportional+census+estimates&source=bl&ots=fxIP1SNotq&sig=9dtlp6EfKIye3qJLDLo793QsDn4&hl=en&sa=X&ei=H-RiU4qkJYWBogTBrIK4Aw&ved=0CEsQ6AEwBA#v=onepage&q=postgis%20Using%20polygon%20overlays%20for%20proportional%20census%20estimates&f=false ":
 `  `
 
-:
-`  `
-
-:
-`  `
 
 numeric field overflow: use -lco PRECISION=NO ":
-`ogr2ogr -f Postgresql pg:"dbname=jk_test user=postgres password=ginfo116" "P:\proj_a_d\coastal_conservancy\AcquisitionMapping2013\data\Acquisitions_working.shp" -lco PRECISION=no -nlt MULTIPOLYGON -update -overwrite `
+`ogr2ogr -f Postgresql pg:"dbname=dbname user=postgres password=xyz" input.shp -lco PRECISION=no -nlt MULTIPOLYGON -update -overwrite `
 
-:
-`  `
-
-"    multipolygon to polygon:
-    CREATE TABLE temp AS SELECT 
-        a.wkb_geometry FROM (
-            SELECT (ST_Dump(wkb_geometry)).geom AS wkb_geometry 
-            FROM cpad_superunits_n_m_a
-        ) AS a" ":
-`  `
-
-:
-`  `
-
-"
-    // polygons converted to lines
-    //var line_sql = 'SELECT ST_CollectionExtract(the_geom,2) FROM ' + TABLENAME + ' as lines_table';
-    //SELECT ST_Transform(ST_CollectionExtract(the_geom,2),3857) AS the_geom_webmercator, cartodb_id FROM cpad_units_m_nightly_simplify10m
-
-    //ogr2ogr cpad_lines.shp cpad_units_m_nightly_simplify10m.shp -dialect sqlite -sql ""SELECT Boundary(geometry) as geometry, unit_name FROM cpad_units_m_nightly_simplify10m "" -overwrite
-
-    //SELECT ST_Transform(Boundary(the_geom),3857) AS the_geom_webmercator, cartodb_id FROM cpad_units_m_nightly_simplify10m
-    //SELECT ST_Transform(ExteriorRing(the_geom),3857) AS the_geom_webmercator, cartodb_id FROM cpad_units_m_nightly_simplify10m" ":
-`  `
-
-:
-`  `
-
-"update column based on another table: UPDATE
-    ""QuestionTrackings""
-SET
-    ""QuestionID"" = (SELECT ""QuestionID"" FROM ""Answers"" WHERE ""AnswerID""=""QuestionTrackings"".""AnswerID"")
-WHERE
-    ""QuestionID"" is NULL
-AND ...":
-`  `
-
-:
-`  `
-
-utf8 etc:
-`  `
-
-windows: 2 lines:
-`SET PGCLIENTENCODING=LATIN1 `
-
-:
-`ogr2ogr pg:"host=ginserver dbname=cpad_2015 user=postgres password=ginfo116" stamen_final_list.csv -update -append  `
-
-linux: include  options='-c client_encoding=latin1' inside connection params? ":
-`PGCLIENTENCODING=utf-8 ogr2ogr pg:"host=ginserver dbname=cpad_2015 user=postgres password=ginfo116" stamen_final_list.csv -update -append `
-
-within psql determine encoding: ":
-`show SERVER_ENCODING; `
-
-:
-`  `
-
-postgis to shp utf8 encoding:
-`ogr2ogr cpad_2014b8_superunits_name_manager_access.shp  pg:"host=ginserver dbname=cpad_2015 user=postgres password=ginfo116" su_nma_unbuffer -overwrite -t_srs epsg:3310  -lco ENCODING=UTF-8 `
-
-:
-`  `
-
-postgis backup:
-`pg_dump -U comap_mapcollab -n public --schema-only comap_mapcollab > comap_mapcollab_schema_defs.dump `
-
-:
-`  `
-
-shp2pg:
-`ogr2ogr --config PGCLIENTENCODING LATIN1 -f postgresql  pg:"dbname=db user=user password=password options='-c client_encoding=latin1'" -nln new_name -update -append -t_srs epsg:4326 -nlt MultiPolygon -lco PRECISION=NO  file.shp `
-
-pg2shp:
-`ogr2ogr --config SHAPE_ENCODING "UTF-8" -lco ENCODING="UTF-8" file.shp  pg:"dbname=db user=user password=password" table  `
-
-:
-`Needs BOTH -lco ENCODING="UTF-8"  `
-
-:
-`AND --config SHAPE_ENCODING "UTF-8" `
-
-:
-`  `
-
-"table name with periods/spaces:
-ogrinfo -sql ""select count(*) from 'us48_osm_km_64.40.merge' where value >= 40 and value < 50"" us48_osm_km_64.40.merge.shp" ":
-`  `
-
-:
-`  `
 
 "ogr2ogr -f geojson us50_topo_current_grid.geojson \
 -dialect sqlite -sql \
@@ -463,11 +308,8 @@ topomaps_all.csv
 :
 `  `
 
-alias ogr2pg='ogr2ogr -f postgresql -progress --config PG_USE_COPY YES pg:"host=localhost dbname=mapple2 user=johnkelly" -update -append -skipfailures ':
-`  `
+alias ogr2pg='ogr2ogr -f postgresql -progress --config PG_USE_COPY YES pg:"host=localhost dbname=our_db user=me" -update -append -skipfailures ':
 
-:
-`  `
 
 http://download.geofabrik.de/north-america/us/california.html ":
 `  `
@@ -475,8 +317,30 @@ http://download.geofabrik.de/north-america/us/california.html ":
 http://download.geofabrik.de/north-america/us/california-latest.osm.pbf ":
 `  `
 
-ogrinfo -so -al california-latest.osm.pbf ":
-`  `
+ogrinfo -so -al 'http://download.geofabrik.de/north-america/us/california-latest.osm.pbf'
+
+ogrinfo -ro -al -so /vsizip//vsicurl/https://raw.githubusercontent.com/OSGeo/gdal/master/autotest/ogr/data/poly.zip
+ogrinfo -ro -al -so /vsizip//vsicurl/http//www.naturalearthdata.com/download/50m/cultural/ne_50m_admin_0_map_subunits.zip
+ogrinfo -ro -al -so /vsizip//vsicurl/https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/50m/cultural/ne_50m_admin_0_map_subunits.zip
+ogrinfo -ro -al -so /vsizip//vsicurl/https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/50m/cultural/ne_50m_admin_0_map_subunits.zip/ne_50m_admin_0_map_subunits/ne_50m_admin_0_map_subunits.shp
+
+ogrinfo -ro -al -so "/vsizip/vsicurl/https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/10m/cultural/ne_10m_admin_0_countries.zip" 
+ogrinfo -ro -al -so "/vsizip/vsicurl/https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/10m/cultural/ne_10m_admin_0_countries.zip/ne_10m_admin_0_countries.shp" 
+
+ogrinfo -ro -al -so /vsizip/{/vsicurl/https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/10m/cultural/ne_10m_admin_0_countries.zip}/ne_10m_admin_0_countries.shp
+ogrinfo -ro -al -so /vsizip//vsicurl/https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/10m/cultural/ne_10m_admin_0_countries.zip/ne_10m_admin_0_countries.shp
+
+
+
+ogrinfo -ro -al -so /vsizip//vsicurl/http://www2.census.gov/geo/tiger/GENZ2010/gz_2010_us_040_00_20m.zip/gz_2010_us_040_00_20m/gz_2010_us_040_00_20m.shp
+ogrinfo -ro -al -so http://www2.census.gov/geo/tiger/GENZ2010/gz_2010_us_040_00_20m.zip
+ogrinfo -ro -al -so /vsizip//vsicurl/gz_2010_us_040_00_20m.zip
+ogrinfo -ro -al -so /vsizip/gz_2010_us_040_00_20m.zip
+
+ogrinfo -ro -al -so /vsizip/gz_2010_us_040_00_20m.zip
+
+
+ogrinfo -ro /vsizip//vsicurl/http://www2.census.gov/geo/tiger/GENZ2010/gz_2010_us_040_00_20m.zip -dialect sqlite -sql "select NAME, STATE, ST_X(ST_PointOnSurface(geometry)) as x, ST_Y(ST_PointOnSurface(geometry)) as y from gz_2010_us_040_00_20m where NAME='California'"
 
 ogrinfo -dialect sqlite -sql "select natural from multipolygons group by natural order by natural" california-latest.osm.pbf:
 `  `
@@ -484,3 +348,14 @@ ogrinfo -dialect sqlite -sql "select natural from multipolygons group by natural
 ogr2ogr -dialect sqlite -sql "SELECT osm_id, osm_way_id, name, type, natural, other_tags FROM multipolygons WHERE natural IN ('bay', 'glacier', 'lake', 'marsh', 'pond', 'river', 'water', 'wetland')" osm_calif_water.shp california-latest.osm.pbf:
 `  `
 
+ogr2ogr -f GeoJSON output.geojson "http:/example.com/arcgis/rest/services/SERVICE/LAYER/MapServer/0/query?f=json&returnGeometry=true&etc=..." OGRGeoJSON
+ogr2ogr -f 'GeoJSON' dest.geojson /vsizip/archive.zip/zipped_dir/in.geojson
+
+
+Add an index on an attribute:
+
+ogrinfo example.shp -sql "CREATE INDEX ON example USING fieldname"
+
+Add a spatial index:
+
+ogrinfo example.shp -sql "CREATE SPATIAL INDEX ON example"
