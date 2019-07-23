@@ -16,40 +16,50 @@ hex: String (0.0)
 ```
 
 Convert formats:
+
 `ogr2ogr out.geojson in.shp`
 
 Add field:
+
 `ogrinfo -sql "ALTER TABLE lyr ADD COLUMN field NUMERIC(1000,2)" lyr.shp `
 
 Drop/remove/delete field:
+
 `ogrinfo -sql "ALTER TABLE lyr DROP COLUMN field" lyr.shp  `
 
 Rename field:
+
 `ogrinfo -sql "ALTER TABLE input RENAME COLUMN SUM(hectares) TO hectares" in.shp  `
 
 Reorder fields:
+
 `ogr2ogr new.shp old.shp -select "second_fld, first_fld" `
 
 Replace string:
+
 `ogrinfo in.geojson -sql "UPDATE TABLE SET field = REPLACE( field, 'bad', 'good')"`
 
 Merge files:
+
 `ogr2ogr merged.shp in1.shp; ogr2ogr -update -append merged.shp in2.shp -nln merged  `
 
 Reproject (while defining unknown source spatial ref system?):
+
 `ogr2ogr out_3857.geojson in_4236.geojson -s_srs 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]'
  -t_srs 'PROJCS["WGS 84 / Pseudo-Mercator",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Mercator_1SP"],PARAMETER["central_meridian",0],PARAMETER["scale_factor",1],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["X",EAST],AXIS["Y",NORTH],EXTENSION["PROJ4","+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs"],AUTHORITY["EPSG","3857"]]'
 `
 
 Clip by bounding box:
+
 `ogr2ogr out.geojson in.geojson -clipsrc <x_min> <y_min> <x_max> <y_max>`
 
 Clip by vector:
+
 `ogr2ogr out.geojson in.geojson -clipsrc clipping_shp.geojson (must be same srs; dissolve clipsrc first if desired)  `
 
 Union/dissolve/merge-by-attribute:
-`ogr2ogr union.shp in.shp -dialect sqlite -sql "SELECT ST_Union(GEOMETRY),union_field FROM in_lyr GROUP BY union_field" in_lyr.shp `
 
+`ogr2ogr union.shp in.shp -dialect sqlite -sql "SELECT ST_Union(GEOMETRY),union_field FROM in_lyr GROUP BY union_field" in_lyr.shp `
 
 Convert field type (cast) ":
 `  `
@@ -57,55 +67,63 @@ Convert field type (cast) ":
 Rename field  ":
 `  `
 
-Rename & reorder fields ":
+Rename & reorder fields:
+
 `ogr2ogr new.shp old.shp -sql "SELECT old_b AS new_a, old_a AS new_b FROM old"  `
 
 Add a new field & calculate all the areas:
+
 `ogr2ogr new.shp old.shp -sql "SELECT *, ST_AREA(GEOMETRY) as area from old" `
 
 Reorder features/shapes:
 `  `
 
 Set/update/calculate field/values:
+
 `ogrinfo -dialect sqlite -sql "UPDATE table_name SET field='value'"  `
 
 Look-Up/pseudo-join/calculate:
+
 `update states set pop2014=(select pop from pops2014 where name=name); (?) `
 
 Insert/add record:
+
 `ogrinfo -sql "INSERT INTO table (field1,field2) value1, value2" `
 
 Delete/remove record/feature:
+
 `ogrinfo -dialect sqlite -sql "DELETE FROM table WHERE field=value"  `
 
+Create serial / unique id ":
 
-create serial / unique id ":
 `ogrinfo -sql "ALTER TABLE lyr ADD COLUMN uid integer primary key autoincrement" `
 
-create index (non-spatial):
+Create index (non-spatial):
+
 `ogrinfo -sql "CREATE INDEX ON `
 
-concatenate:
+Concatenate:
+
 `ogrinfo -dialect sqlite -sql "SELECT AGNCY_ID || ':' || UNIT_NAME AS SUPER_UNIT FROM CPAD_Units_nightly LIMIT 10" foo.shp `
 
 postgis:
 `ogrinfo -so -al PG:"host=localhost user=mapcollab_coastal_conservancy dbname=mapcollab_coastal_conservancy" `
-"
+
 postgis: pg2shp ":
 `ogr2ogr ca3310_test.shp PG:"host=localhost user=mapcollab_coastal_conservancy dbname=mapcollab_coastal_conservancy" srid_test  -sql "select polygon_test as geometry, srid from srid_test where polygon_test is not null and ST_IsValid(polygon_test)"  `
-"
+
 postgis: destroy db (make new)  ":
 `ogr2ogr -overwrite -f "PostgreSQL" PG:"host=myhost user=myuser dbname=mydb password=mypass" city.shp  `
-"
+
 postgis: shp2pg (ALWAYS use -update -append; these refer to the db as a whole, not tables individually) ":
 `ogr2ogr -f PostgreSQL -update -append PG:"dbname=my_db user=me password=pw" [-nln table_name] shp_name.shp  `
-"
+
 postgis: shp2pg (if db:user is in conf file and you want tablename=shpname) ":
 `ogr2ogr -f PostgreSQL -update -append PG:"user=me" shp_name.shp `
-"
+
 postgis: csv2pg ??  ":
 `ogr2ogr -f PostgreSQL -update -append PG:"dbname=my_db user=me password=pw" [-nln table_name] csv_name.csv  `
-"
+
 Join  ":
 `  `
 "
