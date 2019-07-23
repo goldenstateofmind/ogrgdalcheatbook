@@ -8,6 +8,24 @@ Get info:
 Convert formats:
 `ogr2ogr out.geojson in.shp`
 
+Add field:
+`ogrinfo -sql "ALTER TABLE lyr ADD COLUMN field NUMERIC(1000,2)" lyr.shp `
+
+Drop/remove/delete field:
+`ogrinfo -sql "ALTER TABLE lyr DROP COLUMN field" lyr.shp  `
+
+Rename field:
+`ogrinfo -sql "ALTER TABLE input RENAME COLUMN SUM(hectares) TO hectares" in.shp  `
+
+Reorder fields:
+`ogr2ogr new.shp old.shp -select "second_fld, first_fld" `
+
+Replace string:
+`ogrinfo in.geojson -sql "UPDATE TABLE SET field = REPLACE( field, 'bad', 'good')"`
+
+Merge files:
+`ogr2ogr merged.shp in1.shp; ogr2ogr -update -append merged.shp in2.shp -nln merged  `
+
 Reproject (while defining unknown source spatial ref system?):
 `ogr2ogr out_3857.geojson in_4236.geojson -s_srs 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]'
  -t_srs 'PROJCS["WGS 84 / Pseudo-Mercator",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Mercator_1SP"],PARAMETER["central_meridian",0],PARAMETER["scale_factor",1],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["X",EAST],AXIS["Y",NORTH],EXTENSION["PROJ4","+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs"],AUTHORITY["EPSG","3857"]]'
@@ -21,24 +39,6 @@ Clip by vector:
 
 Union/dissolve/merge-by-attribute:
 `ogr2ogr union.shp in.shp -dialect sqlite -sql "SELECT ST_Union(GEOMETRY),union_field FROM in_lyr GROUP BY union_field" in_lyr.shp `
-
-Merge files:
-`ogr2ogr merged.shp in1.shp; ogr2ogr -update -append merged.shp in2.shp -nln merged  `
-
-Add field:
-`ogrinfo -sql "ALTER TABLE lyr ADD COLUMN field NUMERIC(1000,2)" lyr.shp `
-
-Drop/remove/delete field:
-`ogrinfo -sql "ALTER TABLE lyr DROP COLUMN field" lyr.shp  `
-
-Rename field:
-`ogrinfo -sql "alter table input rename column SUM(hectares) TO hectares" input.shp  `
-
-Reorder fields:
-`ogr2ogr new.shp old.shp -select "second_fld, first_fld" `
-
-Replace string:
-`UPDATE table SET field = replace( field, 'C:\afolder\', 'C:\anewfolder\' )  `
 
 
 Convert field type (cast) ":
