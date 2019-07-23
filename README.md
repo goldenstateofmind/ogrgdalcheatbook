@@ -1,9 +1,19 @@
 # ogrgdalcheatbook
 Example commands for geospatial tasks with OGR, GDAL, PostGIS, ...
 
-
 Get info:
 `ogrinfo -so -al input.geojson`
+```
+Layer name: input
+Geometry: Polygon
+Feature Count: 40465
+Extent: (-122.401443, 37.785243) - (-122.399679, 37.786270)
+Layer SRS WKT:
+...
+    AUTHORITY["EPSG","4326"]]
+val: Integer (0.0)
+hex: String (0.0)
+```
 
 Convert formats:
 `ogr2ogr out.geojson in.shp`
@@ -43,44 +53,42 @@ Union/dissolve/merge-by-attribute:
 
 Convert field type (cast) ":
 `  `
-"
+
 Rename field  ":
 `  `
-"
+
 Rename & reorder fields ":
-`ogr2ogr new.shp old.shp -sql "SELECT second_fld as lynx, first_fld as drinks from old"  `
-"
-Add a new field & calculate all the areas ":
+`ogr2ogr new.shp old.shp -sql "SELECT old_b AS new_a, old_a AS new_b FROM old"  `
+
+Add a new field & calculate all the areas:
 `ogr2ogr new.shp old.shp -sql "SELECT *, ST_AREA(GEOMETRY) as area from old" `
-"
-Reorder features/shapes ":
+
+Reorder features/shapes:
 `  `
-"
-Set/update/calculate field/values ":
+
+Set/update/calculate field/values:
 `ogrinfo -dialect sqlite -sql "UPDATE table_name SET field='value'"  `
-"
-Look-Up/pseudo-join/calculate ":
+
+Look-Up/pseudo-join/calculate:
 `update states set pop2014=(select pop from pops2014 where name=name); (?) `
-"
-Insert/add record ":
+
+Insert/add record:
 `ogrinfo -sql "INSERT INTO table (field1,field2) value1, value2" `
-"
-Delete/remove record/feature  ":
+
+Delete/remove record/feature:
 `ogrinfo -dialect sqlite -sql "DELETE FROM table WHERE field=value"  `
-"
-  ":
-`add a column called state_abbr which is MT where state='Montana', 'WA' where state='Washington' `
-"
+
+
 create serial / unique id ":
 `ogrinfo -sql "ALTER TABLE lyr ADD COLUMN uid integer primary key autoincrement" `
-"
-create index (non-spatial)  ":
+
+create index (non-spatial):
 `ogrinfo -sql "CREATE INDEX ON `
-"
-concatenate ":
+
+concatenate:
 `ogrinfo -dialect sqlite -sql "SELECT AGNCY_ID || ':' || UNIT_NAME AS SUPER_UNIT FROM CPAD_Units_nightly LIMIT 10" foo.shp `
-"
-postgis ":
+
+postgis:
 `ogrinfo -so -al PG:"host=localhost user=mapcollab_coastal_conservancy dbname=mapcollab_coastal_conservancy" `
 "
 postgis: pg2shp ":
@@ -157,18 +165,12 @@ snap / coordinate_precision ":
 "
 bbox min max  ":
 `"ogrinfo -dialect sqlite -sql ""SELECT MbrMinX(ST_Union(GEOMETRY)), MbrMinY(ST_Union(GEOMETRY)), MbrMaxX(ST_Union(GEOMETRY)), MbrMaxY(ST_Union(GEOMETRY)) FROM cb_2014_us_county_500k WHERE STATEFP = '06' GROUP BY STATEFP"" cb_2014_us_county_500k.shp
-" `
-"
-  ":
-`  `
-"
-  ":
-`  `
-"
+
+
 spatial join / poly-in-poly / point in polygon  ":
 `ogrinfo -dialect sqlite -sql "UPDATE cced SET county2 = (SELECT name_pcase FROM counties WHERE ST_Intersects(geometry, cced.geometry))" temp2.sqlite  `
-"
-  ":
+
+
 `ogrinfo -dialect sqlite -sql "UPDATE Acquisitions_working_SD SET COUNTY_NAM = ( SELECT NAME FROM 'N:\California\Administrative\Counties\TIGER-Census\tl_2013_ca_county_3310.shp'.tl_2013_ca_county_3310 as two WHERE ST_Intersects(geometry, ST_PointOnSurface(Acquisitions_working_SD.geometry)) )"  Acquisitions_working_SD.shp   `
 "
 sql data types: ":
@@ -246,26 +248,7 @@ select addgeometrycolumn('collab_polygons', 'the_geom_simp', 3857, 'MULTIPOLYGON
 `  `
 "
 alter table surveys add column user_group_id int references user_groups(id) on delete cascade;  ":
-`  `
-"
-  ":
-`  `
-"
-  ":
-`  `
-"
-  ":
-`  `
-"
-  ":
-`  `
-"
-  ":
-`  `
-"
-  ":
-`  `
-"
+
   ":
 `  `
 "
