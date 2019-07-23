@@ -43,11 +43,16 @@ Merge files:
 
 `ogr2ogr merged.shp in1.shp; ogr2ogr -update -append merged.shp in2.shp -nln merged  `
 
-Reproject (while defining unknown source spatial ref system?):
+Reproject / change coordinate system:
 
-`ogr2ogr out_3857.geojson in_4236.geojson -s_srs 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]'
- -t_srs 'PROJCS["WGS 84 / Pseudo-Mercator",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Mercator_1SP"],PARAMETER["central_meridian",0],PARAMETER["scale_factor",1],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["X",EAST],AXIS["Y",NORTH],EXTENSION["PROJ4","+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs"],AUTHORITY["EPSG","3857"]]'
-`
+`ogr2ogr out_3857.geojson in_4236.geojson -t_srs 'epsg:3857' -s_srs 'epsg:4326'`
+
+Reproject (while defining unknown source spatial ref system):
+```
+ogr2ogr out_3857.geojson in_4236.geojson \
+-s_srs 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]' \
+-t_srs 'PROJCS["WGS 84 / Pseudo-Mercator",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Mercator_1SP"],PARAMETER["central_meridian",0],PARAMETER["scale_factor",1],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["X",EAST],AXIS["Y",NORTH],EXTENSION["PROJ4","+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs"],AUTHORITY["EPSG","3857"]]'
+```
 
 Clip by bounding box:
 
@@ -63,13 +68,6 @@ Union/dissolve/merge-by-attribute:
 
 Convert field type (cast) ":
 `  `
-
-Rename field:
-`  `
-
-Rename & reorder fields:
-
-`ogr2ogr new.shp old.shp -sql "SELECT old_b AS new_a, old_a AS new_b FROM old"  `
 
 Add a new field & calculate all the areas:
 
@@ -104,7 +102,7 @@ Create index (non-spatial):
 
 Concatenate:
 
-`ogrinfo -dialect sqlite -sql "SELECT AGNCY_ID || ':' || UNIT_NAME AS SUPER_UNIT FROM CPAD_Units_nightly LIMIT 10" foo.shp `
+`ogrinfo input.shp -dialect sqlite -sql "SELECT AGNCY_ID || ':' || UNIT_NAME AS SUPER_UNIT FROM CPAD_Units_nightly LIMIT 10" `
 
 postgis:
 `ogrinfo -so -al PG:"host=localhost user=mapcollab_coastal_conservancy dbname=mapcollab_coastal_conservancy" `
